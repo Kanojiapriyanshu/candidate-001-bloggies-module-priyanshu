@@ -79,14 +79,22 @@ const Dashboard = () => {
   const [showToast, setShowToast] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
   const [toastType, setToastType] = useState('success');
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
     const fetchRequests = async () => {
       try {
         const data = await bloggieAPI.getSponsorRequests();
-        setRequests(data);
+        console.log('Sponsor requests:', data);
+        setRequests(Array.isArray(data) ? data : []);
+        setError(null);
       } catch (error) {
         console.error('Error fetching requests:', error);
+        setError('Failed to load sponsor requests.');
+        setRequests([]);
+      } finally {
+        setLoading(false);
       }
     };
     fetchRequests();
@@ -95,7 +103,7 @@ const Dashboard = () => {
   const handleRequestUpdate = async (requestId, status) => {
     try {
       await bloggieAPI.updateSponsorRequest(requestId, status);
-      setRequests(requests.filter(req => req.id !== requestId));
+      setRequests(prev => Array.isArray(prev) ? prev.filter(req => req.id !== requestId) : []);
       setToastMessage(`Request ${status} successfully!`);
       setToastType('success');
       setShowToast(true);
@@ -193,10 +201,16 @@ const Dashboard = () => {
               <h2 className="text-xl font-bold text-gray-900 mb-6 font-lora">
                 Sponsor Requests
               </h2>
-              <SponsorTable
-                requests={requests}
-                onRequestUpdate={handleRequestUpdate}
-              />
+              {loading ? (
+                <div className="text-center text-gray-500 font-open-sans py-8">Loading sponsor requests...</div>
+              ) : error ? (
+                <div className="text-center text-red-500 font-open-sans py-8">{error}</div>
+              ) : (
+                <SponsorTable
+                  requests={Array.isArray(requests) ? requests : []}
+                  onRequestUpdate={handleRequestUpdate}
+                />
+              )}
             </motion.div>
           </div>
 
